@@ -4,8 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+
+<style>
+    .productBox {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin: 10px;
+    cursor: pointer;
+    width: 200px;
+    display: inline-block;
+    text-align: center;
+    transition: 0.2s;
+}
+
+.productBox:hover {
+    background-color: #f0f0f0;
+}
+</style>
+
 </head>
 <body>
-    
+    <h1>Products Selection</h1>
+
+    <input type="text" id="searchInput" placeholder= "Search for product...">
+
+    <select id="sortSelect">
+        <option value="name">By name</option>
+        <option value="price">By price</option>
+    </select>
+    <button id="sortBtn">Sort</button>
+
+    <div id="productsContainer"></div>
+
+    <button id="goToBuy">Buy</button>
+
+
+    <script src="products.js"></script>
+
 </body>
 </html>

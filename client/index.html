@@ -48,9 +48,49 @@
         <input type="email" placeholder="email"><br><br>
         <input type="password" placeholder="password"><br><br>
 
-        <button id="singin">Singin</button>
-        <button id="singup">Singup</button>
+        <button onclick="signin()" id="singin">Singin</button>
+        <button onclick="signup()" id="singup">Singup</button>
     </div>
+
+<script>
+    async function signin(){
+            const email = document.querySelector("#email").value
+            const password = document.querySelector("#password").value
+
+            const response = await fetch("/signin",{
+                headers:{"Content-Type":"application/json"},//allways in header
+                method:"POST",  //what i want to do: post? get?
+                body: JSON.stringify({email,password})      //what do i want to send in the requist body
+            })
+
+            const text = await response.text()
+
+    if (!response.ok) {
+        alert(text)
+        return
+    }
+
+    alert("Welcome!")
+    window.location.href = "/products.html"
+}
+
+        // }
+
+        // async function signup(){
+        //     const email = document.querySelector("#email").value
+        //     const password = document.querySelector("#password").value
+        //     // const serverResult = document.querySelector("#serverResult")
+
+        //     const response = await fetch("signin",{
+        //         headers:{"Content-Type":"application/json"},//allways in header
+        //         method:"POST",  //what i want to do: post? get?
+        //         body: JSON.stringify({email,password})      //what do i want to send in the requist body
+        //     })
+        //     // const data = await response.text()
+        //     // serverResult.textContent = data
+        // }
+</script>
+
 
 </body>
 
