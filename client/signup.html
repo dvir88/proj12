@@ -43,11 +43,11 @@
     <div id="main-window">
         <h1>Sv-shop</h1>
 
-        <input type="name" placeholder="name"><br><br>
-        <input type="email" placeholder="email"><br><br>
-        <input type="password" placeholder="password"><br><br>
+        <input id="name" type="text" placeholder="name"><br><br>
+        <input id="email" type="email" placeholder="email"><br><br>
+        <input id="password" type="password" placeholder="password"><br><br>
 
-        <button onclick="signup()" id="singup">Singup</button>
+        <button onclick="signup()" id="singup">Signup</button>
     </div>
     
 <script>
@@ -69,7 +69,7 @@
     }
 
     alert("Signup successful!")
-    window.location.href = "/signin.html"
+    window.location.href = "/index.html"
 }
 
 </script>

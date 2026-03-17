@@ -29,5 +29,5 @@ document.getElementById("confirmBuy").addEventListener("click", async () => {
     localStorage.removeItem("loggedUser")
     localStorage.removeItem("selectedProducts")
 
-    window.location.href = "/signin.html"
+    window.location.href = "/index.html"
 })

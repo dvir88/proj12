@@ -45,14 +45,19 @@
     <div id="main-window">
         <h1>Sv-shop</h1>
 
-        <input type="email" placeholder="email"><br><br>
-        <input type="password" placeholder="password"><br><br>
+        <input id="email" type="email" placeholder="email"><br><br>
+        <input id="password" type="password" placeholder="password"><br><br>
 
-        <button onclick="signin()" id="singin">Singin</button>
-        <button onclick="signup()" id="singup">Singup</button>
+        <button onclick="signin()" id="singin">Signin</button>
+        <button onclick="goToSignup()">Signup</button>
+
     </div>
 
 <script>
+    function goToSignup() {
+    window.location.href = "/signup.html"
+}
+
     async function signin(){
             const email = document.querySelector("#email").value
             const password = document.querySelector("#password").value
@@ -70,25 +75,12 @@
         return
     }
 
+    localStorage.setItem("loggedUser", email)
+
     alert("Welcome!")
     window.location.href = "/products.html"
 }
 
-        // }
-
-        // async function signup(){
-        //     const email = document.querySelector("#email").value
-        //     const password = document.querySelector("#password").value
-        //     // const serverResult = document.querySelector("#serverResult")
-
-        //     const response = await fetch("signin",{
-        //         headers:{"Content-Type":"application/json"},//allways in header
-        //         method:"POST",  //what i want to do: post? get?
-        //         body: JSON.stringify({email,password})      //what do i want to send in the requist body
-        //     })
-        //     // const data = await response.text()
-        //     // serverResult.textContent = data
-        // }
 </script>
 
 
