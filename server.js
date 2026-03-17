@@ -1,122 +1,169 @@
+//------------------------------------------------------------------------------------------------------------
 const express = require("express")
 const app = express()
 const path = require("path")
-const db = require("mongoose")
+const mongoose = require("mongoose")
+const XLSX = require("xlsx")
 const PORT = 4000
 
-db.connect("").then(()=>{
-    console.log("DB connected!")
-}).catch((err)=>{
-    console.log("Error connecting!", err)
+// ----------------------
+// SCHEMAS & MODELS
+// ----------------------
+const registeredUserSchema = new mongoose.Schema({
+    email: String,
+    password: String
 })
 
+const productsListSchema = new mongoose.Schema({
+    itemName: String,
+    price: Number
+})
+
+const waitingOrdersSchema = new mongoose.Schema({
+    userEmail: String,
+    items: Array
+})
+
+const RegisteredUser = mongoose.model("registeredUser", registeredUserSchema)
+const ProductsList = mongoose.model("productsList", productsListSchema)
+const WaitingOrders = mongoose.model("waitingOrders", waitingOrdersSchema)
+
+// ----------------------
+// EXCEL IMPORT FUNCTION
+// ----------------------
+async function loadProductsFromExcel() {
+    try {
+        const workbook = XLSX.readFile("products.xlsx")
+        const sheet = workbook.Sheets[workbook.SheetNames[0]]
+        const products = XLSX.utils.sheet_to_json(sheet)
+
+        const count = await ProductsList.countDocuments()
+        if (count > 0) {
+            console.log("Products already exist in DB, skipping import.")
+            return
+        }
+
+        // await ProductsList.deleteMany({})
+        await ProductsList.insertMany(products)
+        console.log("Products imported from Excel!")
+
+    } catch (err) {
+        console.log("Error loading Excel:", err)
+    }
+}
+
+// ----------------------
+// CONNECT TO DATABASE
+// ----------------------
+mongoose.connect("mongodb+srv://dvir4500:12345@cluster0.oxfrzio.mongodb.net/svshop")
+    .then(async () => {
+        console.log("DB connected!")
+        await loadProductsFromExcel()
+    })
+    .catch(err => console.log("Error connecting!", err))
+
+// ----------------------
+// MIDDLEWARE
+// ----------------------
 app.use(express.json())
 app.use(express.static("client"))
 
-//Get requests
+function adminCheck(req, res, next) {
+    if (req.query.admin === "true") {
+        return next()
+    }
+
+    res.status(400).send("error")
+}
+
+// ----------------------
+// ROUTES
+// ----------------------
+app.get("/all", adminCheck, async (req, res) => {
+    try {
+        const orders = await WaitingOrders.find()
+        res.json(orders)
+    } catch (err) {
+        res.status(500).send("Server error: " + err.message)
+    }
+})
+
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "client", "add-employee.html"))
+    res.sendFile(path.join(__dirname, "client", "index.html"))
 })
 
-// const employeeSchema = new db.Schema({
-//     name:String,
-//     department:String,
-//     age:Number,
-//     salery:Number
-// })
+app.get("/signup", (req, res) => {
+    res.sendFile(path.join(__dirname, "client", "signup.html"))
+})
 
+app.get("/products", async (req, res) => {
+    const products = await ProductsList.find()
+    res.json(products)
+})
 
-// const Employee = db.model("Employee",employeeSchema)
+app.post("/signin", async (req, res) => {
+    const { email, password } = req.body
 
-// app.post("/", async (req,res)=>{
-//     const {name , department , age , salery} = req.body
-//     if(!name){
-//         return res.status(400).send("Error: name is required")
-//     }
+    if (!email || !password)
+        return res.status(400).send("Email and password are required")
 
-//     const employeeObject = {name , department , age , salery}
-//     try {
-//         await addEmployee(employeeObject)
-//         console.log("User added to DB.")
-//         res.send("Success!")
-//     } catch (error) {
-//         res.status(500).send("Something happend" + error.message)
-//     }
-// })
-
-app.post("/singup", async(req,res)=>{
-    const {name, oldDepartment, newDepartment} = req.body
     try {
-        let result = await Employee.findOneAndUpdate(
-            {name: name, department: oldDepartment},
-            {$set:{department: newDepartment}},
-            {new: true}
-        )
-        if(result){
-            res.send(`${result.name}'s department now been changed to ${result.department}`)
-        }else{
-            res.status(404).send("No such name found")
-        }
+        const user = await RegisteredUser.findOne({ email })
+
+        if (!user)
+            return res.status(404).send("User not found - please signup")
+
+        if (user.password !== password)
+            return res.status(401).send("Incorrect password")
+
+        res.send("Signin successful")
+
     } catch (error) {
-        res.status(500).send("Something happend" + error.message)
+        res.status(500).send("Server error: " + error.message)
     }
 })
 
-app.post("/products", async(req,res)=>{
-    const {name, oldDepartment, newDepartment} = req.body
+app.post("/signup", async (req, res) => {
+    const { email, password } = req.body
+
+    if (!email || !password)
+        return res.status(400).send("Email and password are required")
+
     try {
-        let result = await Employee.findOneAndUpdate(
-            {name: name, department: oldDepartment},
-            {$set:{department: newDepartment}},
-            {new: true}
-        )
-        if(result){
-            res.send(`${result.name}'s department now been changed to ${result.department}`)
-        }else{
-            res.status(404).send("No such name found")
-        }
+        const exists = await RegisteredUser.findOne({ email })
+
+        if (exists)
+            return res.status(400).send("User already exists")
+
+        const newUser = new RegisteredUser({ email, password })
+        await newUser.save()
+
+        res.status(201).send("Signup successful")
+
     } catch (error) {
-        res.status(500).send("Something happend" + error.message)
+        res.status(500).send("Server error: " + error.message)
     }
 })
 
-app.post("/buy", async(req,res)=>{
-    const {name, oldDepartment, newDepartment} = req.body
+app.post("/buy", async (req, res) => {
+    const { userEmail, items } = req.body
+
+    if (!userEmail || !items || items.length === 0)
+        return res.status(400).send("Invalid order")
+
     try {
-        let result = await Employee.findOneAndUpdate(
-            {name: name, department: oldDepartment},
-            {$set:{department: newDepartment}},
-            {new: true}
-        )
-        if(result){
-            res.send(`${result.name}'s department now been changed to ${result.department}`)
-        }else{
-            res.status(404).send("No such name found")
-        }
+        const order = new WaitingOrders({ userEmail, items })
+        await order.save()
+        res.send("Order saved successfully")
+
     } catch (error) {
-        res.status(500).send("Something happend" + error.message)
+        res.status(500).send("Error saving order: " + error.message)
     }
 })
 
-app.post("/all", async(req,res)=>{
-    const {name, oldDepartment, newDepartment} = req.body
-    try {
-        let result = await Employee.findOneAndUpdate(
-            {name: name, department: oldDepartment},
-            {$set:{department: newDepartment}},
-            {new: true}
-        )
-        if(result){
-            res.send(`${result.name}'s department now been changed to ${result.department}`)
-        }else{
-            res.status(404).send("No such name found")
-        }
-    } catch (error) {
-        res.status(500).send("Something happend" + error.message)
-    }
-})
-
-
-app.listen(PORT, ()=>{
-    console.log(`Server is on: http://localhost:${PORT}`)    
+// ----------------------
+// START SERVER
+// ----------------------
+app.listen(PORT, () => {
+    console.log(`Server is on: http://localhost:${PORT}`)
 })
